@@ -1,0 +1,12 @@
+[package]
+name = "tokio-orphan-race-repro"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Standalone project (not part of any surrounding workspace).
+[workspace]
+
+[dependencies]
+tokio = { version = "1.54.1", features = ["rt", "process", "signal"] }
+libc = "0.2"

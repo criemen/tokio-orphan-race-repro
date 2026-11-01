@@ -1,0 +1,25 @@
+diff --git a/tokio/src/process/unix/orphan.rs b/tokio/src/process/unix/orphan.rs
+index 63496f0f..26be3b5d 100644
+--- a/tokio/src/process/unix/orphan.rs
++++ b/tokio/src/process/unix/orphan.rs
+@@ -67,11 +67,18 @@ impl<T> OrphanQueueImpl<T> {
+         self.queue.lock().len()
+     }
+ 
+-    pub(crate) fn push_orphan(&self, orphan: T)
++    pub(crate) fn push_orphan(&self, mut orphan: T)
+     where
+         T: Wait,
+     {
+-        self.queue.lock().push(orphan);
++        let mut queue = self.queue.lock();
++        // The child may have exited after the caller's last `try_wait`, and a
++        // concurrent `reap_orphans` may already have consumed its SIGCHLD while
++        // the queue was still empty. Check again while holding the lock.
++        match orphan.try_wait() {
++            Ok(None) => queue.push(orphan),
++            Ok(Some(_)) | Err(_) => {}
++        }
+     }
+ 
+     /// Attempts to reap every process in the queue, ignoring any errors and
